@@ -6,16 +6,16 @@ using System.Threading;
 using System.Windows.Forms;
 using System.Net;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
-namespace giteaTime
+namespace giteaTaskicon
 {
-	public class StopWatch {
+	public class TeaEntry {
 		// StopWatch represent a running stopwatch
-		public DateTimeOffset	created 		{ get; set; }
-		public int				issue_index		{ get; set; }
-		public string			issue_title		{ get; set; }
-		public string			repo_name		{ get; set; }
-		public string			repo_owner_name	{ get; set; }
+		public DateTimeOffset	updated_at 		{ get; set; }
+		public string			url				{ get; set; }
+		public string			title			{ get; set; }
+		public string			type			{ get; set; }
 	}
 	
 	public sealed class NotificationIcon {
@@ -26,8 +26,7 @@ namespace giteaTime
 		private Icon icon2;
 		private Icon icon3;
 		private ContextMenu notificationMenu;
-		private StopWatch[] stopwatches;
-		private const string APISTOPWATCHES  = "api/v1/user/stopwatches";
+		private const string APIWORD = "api/v1/notifications";
 		
 		private static string APIHOST = "";
 		private static string APPTOKEN = "";
@@ -44,7 +43,7 @@ namespace giteaTime
 			notifyIcon.DoubleClick += IconDoubleClick;
 			notifyIcon.ContextMenu = notificationMenu;
 
-			aTimer = new System.Timers.Timer(30000);
+			aTimer = new System.Timers.Timer(300000); //5min
 			// Hook up the Elapsed event for the timer. 
 			aTimer.Elapsed += OnTimedEvent;
 			aTimer.AutoReset = true;
@@ -56,20 +55,28 @@ namespace giteaTime
 			
 			try {
 				using (var client = new WebClient()) {
-					string response = client.DownloadString(String.Format("{0}{1}?token={2}", APIHOST, APISTOPWATCHES, APPTOKEN));
-					stopwatches = JsonConvert.DeserializeObject<StopWatch[]>(response);
-					foreach (StopWatch stopwatch in stopwatches) {
+					string response = client.DownloadString(String.Format("{0}{1}?token={2}", APIHOST, APIWORD, APPTOKEN));
+					
+					JArray datas = JArray.Parse(response);
+					
+					foreach (JObject data in datas) {
+						TeaEntry te = new TeaEntry();
+						Console.Out.WriteLine();
+						te.title = data["subject"]["title"].ToString();
+						te.updated_at = data["updated_at"].ToObject<DateTimeOffset>();
+						te.url = data["repository"]["html_url"].ToString();
+						te.type = data["subject"]["type"].ToString();
+						
 						notificationMenu.MenuItems.Add(String.Format(
-							"{0} /{1}/{2}: Issue {3} '{4}'",
-							stopwatch.created.ToString("ddd, dd.MM. HH:mm"),
-							stopwatch.repo_owner_name,
-							stopwatch.repo_name,
-							stopwatch.issue_index,
-							stopwatch.issue_title
-						), (sender, args) => menuLinkClick(stopwatch));
+							"{0} {1} ({2})",
+							te.updated_at.ToString("ddd, dd.MM. HH:mm"),
+							te.title,
+							te.type
+						), (sender, args) => menuLinkClick(te));
+						
 					}
 					notifyIcon.Icon = icon1;
-					if (stopwatches.Length > 0) notifyIcon.Icon = icon2;
+					if (datas.Count > 0) notifyIcon.Icon = icon2;
 				}
 			} catch (Exception ex) {
 				notificationMenu.MenuItems.Add(ex.Message);
@@ -100,15 +107,12 @@ namespace giteaTime
 			
 			bool isFirstInstance;
 			// Please use a unique name for the mutex to prevent conflicts with other programs
-			using (Mutex mtx = new Mutex(true, "giteaTime", out isFirstInstance)) {
+			using (Mutex mtx = new Mutex(true, "giteaTaskicon", out isFirstInstance)) {
 				if (isFirstInstance) {
 					NotificationIcon notificationIcon = new NotificationIcon();
 					notificationIcon.notifyIcon.Visible = true;
 					Application.Run();
 					notificationIcon.notifyIcon.Dispose();
-				} else {
-					// The application is already running
-					// TODO: Display message box or change focus to existing application instance
 				}
 			} // releases the Mutex
 		}
@@ -121,18 +125,11 @@ namespace giteaTime
 			refreshMenu();
 		}
 		
-		private void menuLinkClick(StopWatch stopwatch) {
-			string url = String.Format(
-				"{0}{1}/{2}/issues/{3}",
-				APIHOST,
-				stopwatch.repo_owner_name,
-				stopwatch.repo_name,
-				stopwatch.issue_index
-			);
+		private void menuLinkClick(TeaEntry te) {
 			try {
-			Process.Start(url);
+			Process.Start(te.url);
 			} catch (Exception) {
-				Console.Out.WriteLine("try to start with browser: " + url);
+				Console.Out.WriteLine("try to start with browser: " + te.url);
 			}
 		}
 		

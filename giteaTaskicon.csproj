@@ -5,8 +5,8 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>giteaTime</RootNamespace>
-    <AssemblyName>giteaTime</AssemblyName>
+    <RootNamespace>giteaTaskicon</RootNamespace>
+    <AssemblyName>giteaTaskicon</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <NoWin32Manifest>False</NoWin32Manifest>
