@@ -18,26 +18,26 @@ namespace giteaTime
 		public string			repo_owner_name	{ get; set; }
 	}
 	
-	public sealed class NotificationIcon
-	{
+	public sealed class NotificationIcon {
 		private System.Timers.Timer aTimer;
 		
 		public NotifyIcon notifyIcon;
 		private Icon icon1;
 		private Icon icon2;
+		private Icon icon3;
 		private ContextMenu notificationMenu;
 		private StopWatch[] stopwatches;
 		private const string APISTOPWATCHES  = "api/v1/user/stopwatches";
 		
-		private static string APIHOST = ""; //"http://localhost:3000/";
-		private static string APPTOKEN = ""; //"a5db90680933c7501e4ea9eb2d7185d24012e2c9";
+		private static string APIHOST = "";
+		private static string APPTOKEN = "";
 		
-		public NotificationIcon()
-		{
+		public NotificationIcon() {
 			notifyIcon = new NotifyIcon();
 			notificationMenu = new ContextMenu();
 			icon1 = new Icon("empty.ico");
 			icon2 = new Icon("full.ico");
+			icon3 = new Icon("ups.ico");
 			
 			refreshMenu();
 			
@@ -74,26 +74,28 @@ namespace giteaTime
 			} catch (Exception ex) {
 				notificationMenu.MenuItems.Add(ex.Message);
 				notificationMenu.MenuItems.Add("something went wrong");
-				notifyIcon.Icon = icon2;
+				notifyIcon.Icon = icon3;
 			}
 			notificationMenu.MenuItems.Add(new MenuItem("Exit", menuExitClick));
 		}
 		
-		#region Main - Program entry point
-		/// <summary>Program entry point.</summary>
-		/// <param name="args">Command Line Arguments</param>
-		[STAThread]
-		public static void Main(string[] args)
-		{
+		public static void Main() {
 			Application.EnableVisualStyles();
 			Application.SetCompatibleTextRenderingDefault(false);
 			
-			if (args.Length < 2) {
-				Console.WriteLine(String.Format("{0} http[s]://domain:port/path/ tokenapikeyetc...", "giteaTime.exe"));
+			string[] arguments = Environment.GetCommandLineArgs();
+			if (arguments.Length < 3) {
+				MessageBox.Show(
+					String.Format("{0} http://domain:port/path/ token00api23key42etc999", arguments[0]),
+					"Äh... start me with two parameters!",
+					MessageBoxButtons.OK,
+					MessageBoxIcon.Exclamation,
+					MessageBoxDefaultButton.Button1
+				);
 				return;
 			} else {
-				APIHOST = args[0];
-				APPTOKEN = args[1];
+				APIHOST = arguments[1];
+				APPTOKEN = arguments[2];
 			}
 			
 			bool isFirstInstance;
@@ -110,16 +112,13 @@ namespace giteaTime
 				}
 			} // releases the Mutex
 		}
-		#endregion
-		
-		#region Event Handlers
+
 		private static void menuExitClick(object sender, EventArgs e) {
 			Application.Exit();
 		}
 		
 		private void IconDoubleClick(object sender, EventArgs e) {
 			refreshMenu();
-			//MessageBox.Show("Refreshed!");
 		}
 		
 		private void menuLinkClick(StopWatch stopwatch) {
@@ -133,14 +132,14 @@ namespace giteaTime
 			try {
 			Process.Start(url);
 			} catch (Exception) {
-				Console.WriteLine("try to start with browser: " + url);
+				Console.Out.WriteLine("try to start with browser: " + url);
 			}
 		}
 		
 		private void OnTimedEvent(Object source, ElapsedEventArgs e) {
 			refreshMenu();
 		}
-		#endregion
+
 	}
 	
 }
