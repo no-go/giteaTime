@@ -1,0 +1,15 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+# SharpDevelop 4.4
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "giteaTime", "giteaTime.csproj", "{B338EEBF-D63D-472A-B144-8C00EA0520C9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B338EEBF-D63D-472A-B144-8C00EA0520C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B338EEBF-D63D-472A-B144-8C00EA0520C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+EndGlobal

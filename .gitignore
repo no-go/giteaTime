@@ -1,0 +1,4 @@
+bin/Newtonsoft.Json.dll
+bin/Newtonsoft.Json.xml
+Newtonsoft.Json.12.0.3/*/*.*
+obj
