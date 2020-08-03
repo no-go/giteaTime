@@ -1,4 +1,4 @@
-# giteaTime
+# giteaTime (still alpha)
 
 A cSharp Windows/Linux taskmenu icon app to display running your gitea stopwatches.
 
@@ -17,7 +17,7 @@ the swagger stuff is not used but nice to see!
 
 ## gitea 1.13 patch
 
-(some changes for more details via git API)[gitea.patch]
+[some changes for more details via git API](gitea.patch)
 
 ## security
 
