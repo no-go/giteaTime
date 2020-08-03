@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Timers;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
@@ -19,41 +20,57 @@ namespace giteaTime
 	
 	public sealed class NotificationIcon
 	{
-		private NotifyIcon notifyIcon;
+		private System.Timers.Timer aTimer;
+		
+		public NotifyIcon notifyIcon;
+		private Icon icon1;
+		private Icon icon2;
 		private ContextMenu notificationMenu;
+		private StopWatch[] stopwatches;
 		private const string APISTOPWATCHES  = "api/v1/user/stopwatches";
 		
-		private static string APIHOST = "http://localhost:3000/";
-		private static string APPTOKEN = "a5db90680933c7501e4ea9eb2d7185d24012e2c9";
+		private static string APIHOST = ""; //"http://localhost:3000/";
+		private static string APPTOKEN = ""; //"a5db90680933c7501e4ea9eb2d7185d24012e2c9";
 		
 		public NotificationIcon()
 		{
 			notifyIcon = new NotifyIcon();
+			notificationMenu = new ContextMenu();
+			icon1 = new Icon("empty.ico");
+			icon2 = new Icon("full.ico");
 			
 			refreshMenu();
 			
 			notifyIcon.DoubleClick += IconDoubleClick;
-			notifyIcon.Icon = new Icon("logo.ico");
 			notifyIcon.ContextMenu = notificationMenu;
+
+			aTimer = new System.Timers.Timer(30000);
+			// Hook up the Elapsed event for the timer. 
+			aTimer.Elapsed += OnTimedEvent;
+			aTimer.AutoReset = true;
+			aTimer.Enabled = true;
 		}
 		
 		private void refreshMenu() {
-			notificationMenu = new ContextMenu();
+			notificationMenu.MenuItems.Clear();
 			
 			using (var client = new WebClient()) {
 				string response = client.DownloadString(String.Format("{0}{1}?token={2}", APIHOST, APISTOPWATCHES, APPTOKEN));
-				StopWatch[] sw = JsonConvert.DeserializeObject<StopWatch[]>(response);
-				foreach (StopWatch stopwatch in sw) {
+				stopwatches = JsonConvert.DeserializeObject<StopWatch[]>(response);
+				foreach (StopWatch stopwatch in stopwatches) {
 					notificationMenu.MenuItems.Add(String.Format(
-						"since {0}: {1}/{2}: Issue ({3}) {4}",
-						stopwatch.created.ToString("g"),
+						"{0} /{1}/{2}: Issue {3} '{4}'",
+						stopwatch.created.ToString("ddd, dd.MM. HH:mm"),
 						stopwatch.repo_owner_name,
 						stopwatch.repo_name,
 						stopwatch.issue_index,
 						stopwatch.issue_title
-					));
+					), (sender, args) => menuLinkClick(stopwatch));
 				}
+				notifyIcon.Icon = icon1;
+				if (stopwatches.Length > 0) notifyIcon.Icon = icon2;
 			}
+
 			notificationMenu.MenuItems.Add(new MenuItem("Exit", menuExitClick));
 		}
 		
@@ -73,6 +90,7 @@ namespace giteaTime
 				APIHOST = args[0];
 				APPTOKEN = args[1];
 			}
+			
 			bool isFirstInstance;
 			// Please use a unique name for the mutex to prevent conflicts with other programs
 			using (Mutex mtx = new Mutex(true, "giteaTime", out isFirstInstance)) {
@@ -90,16 +108,34 @@ namespace giteaTime
 		#endregion
 		
 		#region Event Handlers
-		
-		private void menuExitClick(object sender, EventArgs e)
-		{
+		private static void menuExitClick(object sender, EventArgs e) {
 			Application.Exit();
 		}
 		
-		private void IconDoubleClick(object sender, EventArgs e)
-		{
-			MessageBox.Show("The icon was double clicked");
+		private void IconDoubleClick(object sender, EventArgs e) {
+			refreshMenu();
+			//MessageBox.Show("Refreshed!");
+		}
+		
+		private void menuLinkClick(StopWatch stopwatch) {
+			string url = String.Format(
+				"{0}{1}/{2}/issues/{3}",
+				APIHOST,
+				stopwatch.repo_owner_name,
+				stopwatch.repo_name,
+				stopwatch.issue_index
+			);
+			try {
+			Process.Start(url);
+			} catch (Exception) {
+				Console.WriteLine("try to start with browser: " + url);
+			}
+		}
+		
+		private void OnTimedEvent(Object source, ElapsedEventArgs e) {
+			refreshMenu();
 		}
 		#endregion
 	}
+	
 }
