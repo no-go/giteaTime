@@ -1,0 +1,75 @@
+Autor: jochen@homeland <no-go@localhost>  2020-08-03 14:55:04
+Eintragender: jochen@homeland <no-go@localhost>  2020-08-03 14:55:04
+Eltern: b3e06523c1c4c960b9ef4fd2b2f409166100a9ea ([Vendor] upgrade google/go-github to v32.1.0 (#12361))
+Zweig: master
+Folgt auf: v1.13.0-dev
+Vorgänger von: 
+
+    more details for stopwatch
+
+-------------------------- models/issue_stopwatch.go --------------------------
+index 79ce48c4c..d474c270a 100644
+@@ -200,11 +200,18 @@ func (sw *Stopwatch) APIFormat() (api.StopWatch, error) {
+ 	issue, err := getIssueByID(x, sw.IssueID)
+ 	if err != nil {
+ 		return api.StopWatch{}, err
+ 	}
++	repo, err := getRepositoryByID(x, issue.RepoID)
++	if err != nil {
++		return api.StopWatch{}, err
++	}
+ 	return api.StopWatch{
+-		Created:    sw.CreatedUnix.AsTime(),
+-		IssueIndex: issue.Index,
++		Created:       sw.CreatedUnix.AsTime(),
++		IssueIndex:    issue.Index,
++		IssueTitle:    issue.Title,
++		RepoOwnerName: repo.OwnerName,
++		RepoName:      repo.Name,
+ 	}, nil
+ }
+ 
+ // APIFormat convert Stopwatches type to api.StopWatches type
+
+---------------------- modules/structs/issue_stopwatch.go ----------------------
+index 10510e36e..8599e0727 100644
+@@ -10,10 +10,13 @@ import (
+ 
+ // StopWatch represent a running stopwatch
+ type StopWatch struct {
+ 	// swagger:strfmt date-time
+-	Created    time.Time `json:"created"`
+-	IssueIndex int64     `json:"issue_index"`
++	Created       time.Time `json:"created"`
++	IssueIndex    int64     `json:"issue_index"`
++	IssueTitle    string    `json:"issue_title"`
++	RepoOwnerName string    `json:"repo_owner_name"`
++	RepoName      string    `json:"repo_name"`
+ }
+ 
+ // StopWatches represent a list of stopwatches
+ type StopWatches []StopWatch
+
+------------------------ templates/swagger/v1_json.tmpl ------------------------
+index 28a33fb3d..3255e2249 100644
+@@ -14445,8 +14445,20 @@
+         "issue_index": {
+           "type": "integer",
+           "format": "int64",
+           "x-go-name": "IssueIndex"
++        },
++        "issue_title": {
++          "type": "string",
++          "x-go-name": "IssueTitle"
++        },
++        "repo_name": {
++          "type": "string",
++          "x-go-name": "RepoName"
++        },
++        "repo_owner_name": {
++          "type": "string",
++          "x-go-name": "RepoOwnerName"
+         }
+       },
+       "x-go-package": "code.gitea.io/gitea/modules/structs"
+     },
