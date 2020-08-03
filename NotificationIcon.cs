@@ -54,23 +54,28 @@ namespace giteaTime
 		private void refreshMenu() {
 			notificationMenu.MenuItems.Clear();
 			
-			using (var client = new WebClient()) {
-				string response = client.DownloadString(String.Format("{0}{1}?token={2}", APIHOST, APISTOPWATCHES, APPTOKEN));
-				stopwatches = JsonConvert.DeserializeObject<StopWatch[]>(response);
-				foreach (StopWatch stopwatch in stopwatches) {
-					notificationMenu.MenuItems.Add(String.Format(
-						"{0} /{1}/{2}: Issue {3} '{4}'",
-						stopwatch.created.ToString("ddd, dd.MM. HH:mm"),
-						stopwatch.repo_owner_name,
-						stopwatch.repo_name,
-						stopwatch.issue_index,
-						stopwatch.issue_title
-					), (sender, args) => menuLinkClick(stopwatch));
+			try {
+				using (var client = new WebClient()) {
+					string response = client.DownloadString(String.Format("{0}{1}?token={2}", APIHOST, APISTOPWATCHES, APPTOKEN));
+					stopwatches = JsonConvert.DeserializeObject<StopWatch[]>(response);
+					foreach (StopWatch stopwatch in stopwatches) {
+						notificationMenu.MenuItems.Add(String.Format(
+							"{0} /{1}/{2}: Issue {3} '{4}'",
+							stopwatch.created.ToString("ddd, dd.MM. HH:mm"),
+							stopwatch.repo_owner_name,
+							stopwatch.repo_name,
+							stopwatch.issue_index,
+							stopwatch.issue_title
+						), (sender, args) => menuLinkClick(stopwatch));
+					}
+					notifyIcon.Icon = icon1;
+					if (stopwatches.Length > 0) notifyIcon.Icon = icon2;
 				}
-				notifyIcon.Icon = icon1;
-				if (stopwatches.Length > 0) notifyIcon.Icon = icon2;
+			} catch (Exception ex) {
+				notificationMenu.MenuItems.Add(ex.Message);
+				notificationMenu.MenuItems.Add("something went wrong");
+				notifyIcon.Icon = icon2;
 			}
-
 			notificationMenu.MenuItems.Add(new MenuItem("Exit", menuExitClick));
 		}
 		
