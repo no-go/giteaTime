@@ -1,5 +1,7 @@
 # giteaTaskicon
 
+![screenshots and icons](feature.png)
+
 A cSharp Windows/Linux taskmenu icon app to display (polling every 5min or double click icon):
 
 - unread notifications from gitea every 5min
