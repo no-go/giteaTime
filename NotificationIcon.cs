@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Timers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
@@ -11,13 +12,23 @@ using Newtonsoft.Json.Linq;
 namespace giteaTaskicon
 {
 	public class TeaEntry {
-		// StopWatch represent a running stopwatch
+		// TeaEntry represent a new Notification
 		public DateTimeOffset	updated_at 		{ get; set; }
 		public string			url				{ get; set; }
 		public string			title			{ get; set; }
 		public string			type			{ get; set; }
 	}
-	
+
+	public class StopWatch {
+		// StopWatch represent a running stopwatch
+		public DateTimeOffset	created 		{ get; set; }
+		public int				issue_index		{ get; set; }
+		// Missing in gitea 1.13.0 API : 
+		//public string			issue_title		{ get; set; }
+		//public string			repo_name		{ get; set; }
+		//public string			repo_owner_name	{ get; set; }
+	}
+
 	public sealed class NotificationIcon {
 		private System.Timers.Timer aTimer;
 		
@@ -27,6 +38,7 @@ namespace giteaTaskicon
 		private Icon icon3;
 		private ContextMenu notificationMenu;
 		private const string APIWORD = "api/v1/notifications";
+		private const string APIWORD2 = "api/v1/user/stopwatches";
 		
 		private static string APIHOST = "";
 		private static string APPTOKEN = "";
@@ -37,7 +49,8 @@ namespace giteaTaskicon
 			icon1 = new Icon("empty.ico");
 			icon2 = new Icon("full.ico");
 			icon3 = new Icon("ups.ico");
-			
+			ServicePointManager.ServerCertificateValidationCallback += (send, certificate, chain, sslPolicyErrors) => { return true; };
+								
 			refreshMenu();
 			
 			notifyIcon.DoubleClick += IconDoubleClick;
@@ -52,12 +65,17 @@ namespace giteaTaskicon
 		
 		private void refreshMenu() {
 			notificationMenu.MenuItems.Clear();
-			
+			JArray datas = new JArray();
+			List<StopWatch> stopwatches = new List<StopWatch>();
+
+			notifyIcon.Icon = icon1;
+
 			try {
 				using (var client = new WebClient()) {
+
 					string response = client.DownloadString(String.Format("{0}{1}?token={2}", APIHOST, APIWORD, APPTOKEN));
 					
-					JArray datas = JArray.Parse(response);
+					datas = JArray.Parse(response);
 					
 					foreach (JObject data in datas) {
 						TeaEntry te = new TeaEntry();
@@ -75,14 +93,35 @@ namespace giteaTaskicon
 						), (sender, args) => menuLinkClick(te));
 						
 					}
-					notifyIcon.Icon = icon1;
-					if (datas.Count > 0) notifyIcon.Icon = icon2;
+					
 				}
 			} catch (Exception ex) {
 				notificationMenu.MenuItems.Add(ex.Message);
-				notificationMenu.MenuItems.Add("something went wrong");
+				notificationMenu.MenuItems.Add("something went wrong on notification request");
 				notifyIcon.Icon = icon3;
 			}
+
+			try {
+				using (var client = new WebClient()) {
+
+					string response = client.DownloadString(String.Format("{0}{1}?token={2}", APIHOST, APIWORD2, APPTOKEN));
+					
+					stopwatches = JsonConvert.DeserializeObject<List<StopWatch>>(response);
+					foreach (StopWatch stopwatch in stopwatches) {
+						notificationMenu.MenuItems.Add(String.Format(
+							"Stopwatch running since {0}",
+							stopwatch.created.ToString("ddd, dd.MM. HH:mm")
+						));
+					}
+				}
+			} catch (Exception ex) {
+				notificationMenu.MenuItems.Add(ex.Message);
+				notificationMenu.MenuItems.Add("something went wrong on stopwatch request");
+				notifyIcon.Icon = icon3;
+			}
+			if (datas.Count > 0) notifyIcon.Icon = icon2;
+			if (stopwatches.Count > 0) notifyIcon.Icon = icon2;
+
 			notificationMenu.MenuItems.Add(new MenuItem("Exit", menuExitClick));
 		}
 		
