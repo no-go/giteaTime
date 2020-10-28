@@ -22,7 +22,7 @@ the swagger stuff is not used but nice to see!
 
 ## Stopwatch(es)
 
-This code shows just a "since" and no additional infos, because default gitea 1.13.0 API has no additional info.
+This code shows just a "since" and no additional infos, because default API in gitea 1.12.x has no additional info.
 To add more infos take a look to the "master" branch of giteaTime and its `gitea.patch` file.
 
 ## Security
