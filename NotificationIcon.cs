@@ -23,10 +23,9 @@ namespace giteaTaskicon
 		// StopWatch represent a running stopwatch
 		public DateTimeOffset	created 		{ get; set; }
 		public int				issue_index		{ get; set; }
-		// Missing in gitea 1.13.0 API : 
-		//public string			issue_title		{ get; set; }
-		//public string			repo_name		{ get; set; }
-		//public string			repo_owner_name	{ get; set; }
+		public string			issue_title		{ get; set; }
+		public string			repo_name		{ get; set; }
+		public string			repo_owner_name	{ get; set; }
 	}
 
 	public sealed class NotificationIcon {
@@ -42,6 +41,8 @@ namespace giteaTaskicon
 		
 		private static string APIHOST = "";
 		private static string APPTOKEN = "";
+		private static string OSPLAT = "";
+		private static string TIMEFORMAT = "";
 		
 		public NotificationIcon() {
 			notifyIcon = new NotifyIcon();
@@ -72,29 +73,32 @@ namespace giteaTaskicon
 
 			try {
 				using (var client = new WebClient()) {
-
-					string response = client.DownloadString(String.Format("{0}{1}?token={2}", APIHOST, APIWORD, APPTOKEN));
+					// fetch notifications
+					string response = client.DownloadString(String.Format("{0}{1}?token={2}", APIHOST, APIWORD, APPTOKEN));					
+					datas = JArray.Parse(response);					
+				}
+				if (datas.Count == 1) {
+					notificationMenu.MenuItems.Add("NOTIFICATION", (sender, args) =>urlOpen(String.Format("{0}notifications", APIHOST)) );
+				} else if (datas.Count > 1) {
+					notificationMenu.MenuItems.Add("NOTIFICATIONS", (sender, args) =>urlOpen(String.Format("{0}notifications", APIHOST)) );
+				}
+				foreach (JObject data in datas) {
+					TeaEntry te = new TeaEntry();
+					Console.Out.WriteLine();
+					te.title = data["subject"]["title"].ToString();
+					te.updated_at = data["updated_at"].ToObject<DateTimeOffset>();
+					te.url = data["repository"]["html_url"].ToString();
+					te.type = data["subject"]["type"].ToString();
 					
-					datas = JArray.Parse(response);
-					
-					foreach (JObject data in datas) {
-						TeaEntry te = new TeaEntry();
-						Console.Out.WriteLine();
-						te.title = data["subject"]["title"].ToString();
-						te.updated_at = data["updated_at"].ToObject<DateTimeOffset>();
-						te.url = data["repository"]["html_url"].ToString();
-						te.type = data["subject"]["type"].ToString();
-						
-						notificationMenu.MenuItems.Add(String.Format(
-							"{0} {1} ({2})",
-							te.updated_at.ToString("ddd, dd.MM. HH:mm"),
-							te.title,
-							te.type
-						), (sender, args) => menuLinkClick(te));
-						
-					}
+					notificationMenu.MenuItems.Add(String.Format(
+						"{0}: {1} ({2})",
+						te.updated_at.ToString(TIMEFORMAT),
+						te.title,
+						te.type
+					), (sender, args) => menuLinkClick(te));
 					
 				}
+
 			} catch (Exception ex) {
 				notificationMenu.MenuItems.Add(ex.Message);
 				notificationMenu.MenuItems.Add("something went wrong on notification request");
@@ -103,16 +107,21 @@ namespace giteaTaskicon
 
 			try {
 				using (var client = new WebClient()) {
-
+					// fetch stopwatch
 					string response = client.DownloadString(String.Format("{0}{1}?token={2}", APIHOST, APIWORD2, APPTOKEN));
-					
 					stopwatches = JsonConvert.DeserializeObject<List<StopWatch>>(response);
-					foreach (StopWatch stopwatch in stopwatches) {
-						notificationMenu.MenuItems.Add(String.Format(
-							"Stopwatch running since {0}",
-							stopwatch.created.ToString("ddd, dd.MM. HH:mm")
-						));
-					}
+				}
+				if (stopwatches.Count == 1) {
+					notificationMenu.MenuItems.Add("STOPWATCH");
+				} else if (stopwatches.Count > 1) {
+					notificationMenu.MenuItems.Add("STOPWATCHES");
+				}
+				foreach (StopWatch sw in stopwatches) {
+					notificationMenu.MenuItems.Add(String.Format(
+						"{0}: {1}",
+						sw.created.ToString(TIMEFORMAT),
+						sw.issue_title
+					), (sender, args) => menuLinkClick(sw));
 				}
 			} catch (Exception ex) {
 				notificationMenu.MenuItems.Add(ex.Message);
@@ -130,18 +139,20 @@ namespace giteaTaskicon
 			Application.SetCompatibleTextRenderingDefault(false);
 			
 			string[] arguments = Environment.GetCommandLineArgs();
-			if (arguments.Length < 3) {
+			if (arguments.Length < 5) {
 				MessageBox.Show(
-					String.Format("{0} http://domain:port/path/ token00api23key42etc999", arguments[0]),
-					"Äh... start me with two parameters!",
+					String.Format("{0} Win|Linux|Osx \"ddd, dd.MM. HH:mm\" https://domain:port/path/ token00api23key42etc999", arguments[0]),
+					"Start me with four parameters!",
 					MessageBoxButtons.OK,
 					MessageBoxIcon.Exclamation,
 					MessageBoxDefaultButton.Button1
 				);
 				return;
 			} else {
-				APIHOST = arguments[1];
-				APPTOKEN = arguments[2];
+				OSPLAT = arguments[1];
+				TIMEFORMAT = arguments[2];
+				APIHOST = arguments[3];
+				APPTOKEN = arguments[4];
 			}
 			
 			bool isFirstInstance;
@@ -164,12 +175,30 @@ namespace giteaTaskicon
 			refreshMenu();
 		}
 		
-		private void menuLinkClick(TeaEntry te) {
+		private void urlOpen(string url) {
 			try {
-			Process.Start(te.url);
+				Process.Start(url);
 			} catch (Exception) {
-				Console.Out.WriteLine("try to start with browser: " + te.url);
+				if (OSPLAT == "Win") {
+					url = url.Replace("&", "^&");
+					Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") { CreateNoWindow = true });
+				} else if (OSPLAT == "Linux") {
+					Process.Start("xdg-open", url);
+				} else if (OSPLAT == "Osx") {
+					Process.Start("open", url);
+				} else {
+					Console.Out.WriteLine("Fail to start with browser: " + url);
+				}
 			}
+		}
+
+		private void menuLinkClick(TeaEntry te) {
+			urlOpen(te.url);
+		}
+
+		private void menuLinkClick(StopWatch sw) {
+			string url = String.Format("{0}{1}/{2}/issues/{3}", APIHOST, sw.repo_owner_name, sw.repo_name, sw.issue_index);
+			urlOpen(url);
 		}
 		
 		private void OnTimedEvent(Object source, ElapsedEventArgs e) {
