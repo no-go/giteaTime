@@ -1,6 +1,6 @@
 # giteaTaskicon
 
-A cSharp Windows/Linux(Mono) taskmenu icon app for gitea (>= v13.0.0-rc1) Notifications and Stopwatch.
+A cSharp Windows/Linux(Mono) taskmenu icon app for gitea (>= v1.13.0-rc1) Notifications and Stopwatch.
 
 ![screenshots and icons](feature.png)
 
