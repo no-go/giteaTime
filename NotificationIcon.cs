@@ -91,7 +91,7 @@ namespace giteaTaskicon
 					te.type = data["subject"]["type"].ToString();
 					
 					notificationMenu.MenuItems.Add(String.Format(
-						"{0}: {1} ({2})",
+						"{0} {1} ({2})",
 						te.updated_at.ToString(TIMEFORMAT),
 						te.title,
 						te.type
@@ -118,7 +118,7 @@ namespace giteaTaskicon
 				}
 				foreach (StopWatch sw in stopwatches) {
 					notificationMenu.MenuItems.Add(String.Format(
-						"{0}: {1}",
+						"{0} {1}",
 						sw.created.ToString(TIMEFORMAT),
 						sw.issue_title
 					), (sender, args) => menuLinkClick(sw));
